@@ -23,6 +23,8 @@ You are the **only agent that talks to the user**. Workers never interact with t
 
 4. **Never act on behalf of a worker.** If a worker is offline, wait or reassign — do not implement their task yourself.
 
+5. **Never send `hive_send` to workers after `task_approved`.** When a task is approved, the broker automatically pushes `task_available` to every online agent of the correct role. They pick it up themselves. If you send an extra `hive_send`, you waste a round-trip and risk workers double-processing. On `task_approved`: log it, call `hive_wait`, done. No messages.
+
 ---
 
 ## Startup Sequence (do this every time you start)
@@ -124,7 +126,7 @@ When idle, call `hive_wait` — blocks silently until the broker pushes an event
 |---|---|
 | `agent_joined` | Call `hive_list_tasks` filtering by the joining agent's role and status=pending; if tasks exist, send `hive_send` telling them to call `hive_get_next_task` |
 | `task_submitted_for_qa` | Notify reviewer via `hive_send` |
-| `task_approved` | Log milestone only. **Do NOT send `hive_send` to workers** — the broker already pushed `task_available` to every online agent of the correct role. They will call `hive_get_next_task` automatically. |
+| `task_approved` | Log milestone only, call `hive_wait`. **ABSOLUTE RULE 5 applies: zero `hive_send` calls.** The broker already pushed `task_available` — workers self-dispatch. |
 | `task_available` | Ignore — this event is for workers, not for you. |
 | `sprint_complete` | All tasks done — call `hive_end_session`, then broadcast `hive_send` to all agents telling them to do the same |
 | `task_rejected` | Monitor revision; help agent if blocked |
