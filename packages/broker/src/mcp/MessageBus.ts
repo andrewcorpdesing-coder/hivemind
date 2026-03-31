@@ -28,12 +28,26 @@ interface PendingRow {
 export class MessageBus {
   private db: Database
   private pruneTimer: NodeJS.Timeout
+  private waiters = new Map<string, Set<() => void>>()
 
   constructor(db: Database) {
     this.db = db
     this.db.addSchema(MESSAGE_SCHEMA)
     // Prune expired messages every 5 minutes
     this.pruneTimer = setInterval(() => this.pruneExpired(), 5 * 60 * 1000)
+  }
+
+  /**
+   * Register a one-shot callback fired when the next message arrives for agentId.
+   * Returns an unsubscribe function to cancel before timeout.
+   */
+  onNextMessage(agentId: string, callback: () => void): () => void {
+    const set = this.waiters.get(agentId) ?? new Set<() => void>()
+    set.add(callback)
+    this.waiters.set(agentId, set)
+    return () => {
+      this.waiters.get(agentId)?.delete(callback)
+    }
   }
 
   /**
@@ -74,6 +88,15 @@ export class MessageBus {
         stmt.run(targetId, params.fromAgentId, payload, params.priority, createdAt, expiresAt)
       }
     })
+
+    // Wake any hive_wait call blocking on these agents
+    for (const targetId of params.targetIds) {
+      const cbs = this.waiters.get(targetId)
+      if (cbs?.size) {
+        cbs.forEach(cb => cb())
+        this.waiters.delete(targetId)
+      }
+    }
   }
 
   /**

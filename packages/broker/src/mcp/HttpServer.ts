@@ -16,6 +16,7 @@ import { EventQueue } from './EventQueue.js'
 import { MessageBus } from './MessageBus.js'
 import { registerRegisterTool } from '../tools/registerTool.js'
 import { registerHeartbeatTool } from '../tools/heartbeatTool.js'
+import { registerWaitTool } from '../tools/waitTool.js'
 import { registerSendTool } from '../tools/sendTool.js'
 import { registerListAgentsTool } from '../tools/listAgentsTool.js'
 import { registerCreateTaskTool } from '../tools/createTaskTool.js'
@@ -423,6 +424,7 @@ export class HttpServer {
   private registerTools(server: McpServer, session: HiveSession): void {
     registerRegisterTool(server, this.agentRegistry, this.eventQueue, this.allSessions, session, this.auditLedger)
     registerHeartbeatTool(server, this.agentRegistry, this.eventQueue, this.messageBus, this.fileLockRegistry)
+    registerWaitTool(server, this.agentRegistry, this.eventQueue, this.messageBus)
     registerSendTool(server, this.agentRegistry, this.messageBus)
     registerListAgentsTool(server, this.agentRegistry)
     registerCreateTaskTool(server, this.agentRegistry, this.taskStore, this.eventQueue, this.auditLedger)

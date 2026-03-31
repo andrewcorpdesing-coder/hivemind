@@ -91,7 +91,8 @@ hive_blackboard_write({
 | Tool | When to use |
 |---|---|
 | `hive_register` | Startup |
-| `hive_heartbeat` | Every 15s |
+| `hive_wait` | When idle — blocks until broker pushes an event |
+| `hive_heartbeat` | Only while actively working (every 55s, keeps locks alive) |
 | `hive_get_next_task` | When idle |
 | `hive_declare_files` | Before reading source files |
 | `hive_release_locks` | Before completing |

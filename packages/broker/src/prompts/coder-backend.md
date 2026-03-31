@@ -23,7 +23,7 @@ You are one of several Claude Code agents working in parallel on a shared codeba
 
 ## Main Loop
 
-Every **15 seconds** call `hive_heartbeat`. Process `pending_events`:
+When idle (no active task), call `hive_wait` — blocks silently until the broker pushes work, consuming zero tokens:
 
 | Event type | Your action |
 |---|---|
@@ -31,13 +31,18 @@ Every **15 seconds** call `hive_heartbeat`. Process `pending_events`:
 | `lock_granted` | You were waiting for a lock — resume work |
 | `lock_contention_notice` | Someone is waiting for your file — finish and release ASAP |
 | `task_rejected` | You have revision work — call `hive_get_next_task` |
-| `message` | Read and respond; if it's a blocker, add to `state.blockers` |
+| `message_received` | Read and respond; if it's a blocker, add to `state.blockers` |
+
+If `hive_wait` returns `{ reconnect: true, events: [] }` — call it again immediately, no action needed.
+
+While **actively working** on a task, call `hive_heartbeat` every 55s to keep file locks alive.
 
 ---
 
 ## Task Workflow (follow this exactly)
 
 ```
+0. hive_wait                   → block until task is available (if nothing from startup)
 1. hive_get_next_task          → receive task details
 2. hive_declare_files          → declare ALL files you'll touch (READ or EXCLUSIVE)
    - Wait if locks are queued  → you'll get a lock_granted event
@@ -49,6 +54,7 @@ Every **15 seconds** call `hive_heartbeat`. Process `pending_events`:
 8. hive_release_locks          → release ALL file locks
 9. hive_complete_task          → submit with summary + files_modified
 10. hive_get_next_task         → claim your next task
+    → if no task: hive_wait → process events → repeat from 0
 ```
 
 **Never call `hive_complete_task` before `hive_release_locks`.**
@@ -155,7 +161,8 @@ hive_complete_task({
 | Tool | When to use |
 |---|---|
 | `hive_register` | Once at startup |
-| `hive_heartbeat` | Every 15s |
+| `hive_wait` | When idle — blocks until broker pushes an event |
+| `hive_heartbeat` | Only while actively working (every 55s, keeps locks alive) |
 | `hive_get_next_task` | When idle — also returns revision tasks first |
 | `hive_declare_files` | Before touching any file |
 | `hive_release_locks` | Before completing task |

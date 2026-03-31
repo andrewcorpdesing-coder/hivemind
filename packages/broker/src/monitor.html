@@ -319,7 +319,7 @@ async function refresh() {
     document.getElementById('task-count').textContent = allTasks.length
     renderTasks()
     renderBlackboard(bb.blackboard ?? {})
-    renderLocks(locks.active ?? [], locks.queued ?? [])
+    renderLocks(locks.active?.locks ?? locks.active ?? [], locks.queued?.locks ?? locks.queued ?? [])
     renderAudit(audit.entries ?? [])
 
   } catch (e) {

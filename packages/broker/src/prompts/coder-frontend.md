@@ -23,7 +23,11 @@ You are a frontend specialist in a multi-agent Claude Code system coordinated at
 
 ## Main Loop
 
-Every **15 seconds** call `hive_heartbeat`. Process `pending_events`:
+When idle, call `hive_wait` — blocks until broker pushes an event, zero tokens wasted.
+Process each event in the response:
+
+If `hive_wait` returns `{ reconnect: true, events: [] }` — call it again immediately.
+While **actively working**, call `hive_heartbeat` every 55s to keep locks alive.
 
 | Event type | Your action |
 |---|---|
@@ -98,7 +102,8 @@ hive_send({
 | Tool | When to use |
 |---|---|
 | `hive_register` | Startup |
-| `hive_heartbeat` | Every 15s |
+| `hive_wait` | When idle — blocks until broker pushes an event |
+| `hive_heartbeat` | Only while actively working (every 55s, keeps locks alive) |
 | `hive_get_next_task` | When idle |
 | `hive_declare_files` | Before touching files |
 | `hive_release_locks` | Before completing |
