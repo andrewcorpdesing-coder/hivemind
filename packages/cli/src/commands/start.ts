@@ -13,11 +13,9 @@ function findBrokerEntry(): string {
   const devPath = resolve(__dirname, '../../../broker/dist/index.js')
   if (existsSync(devPath)) return devPath
 
-  // 2. Published npm package: @hivemind/broker installed as a dependency
-  try {
-    const req = createRequire(import.meta.url)
-    return req.resolve('@hivemind/broker')
-  } catch { /* not installed as a package */ }
+  // 2. Bundled inside CLI package (npm install claudeswarm): cli/dist/broker/index.js
+  const bundledPath = resolve(__dirname, '../broker/index.js')
+  if (existsSync(bundledPath)) return bundledPath
 
   return devPath  // Return anyway so the "not found" error below is clear
 }
@@ -70,9 +68,9 @@ export async function runStart(cwd: string = process.cwd()): Promise<void> {
     console.log(chalk.green('✔') + `  Broker started  pid=${child.pid}  port=${config.broker.port}`)
     console.log('   Logs  → ' + chalk.dim('.hive/broker.log'))
     console.log('')
-    console.log('  Next:  ' + chalk.cyan('hive scaffold') + '   — create agent directories')
-    console.log('         ' + chalk.cyan('hive status') + '     — check broker & agents')
-    console.log('         ' + chalk.cyan('hive stop') + '       — shut down the broker')
+    console.log('  Next:  ' + chalk.cyan('claudeswarm scaffold') + '   — create agent directories')
+    console.log('         ' + chalk.cyan('claudeswarm status') + '     — check broker & agents')
+    console.log('         ' + chalk.cyan('claudeswarm stop') + '       — shut down the broker')
   } else {
     console.error(chalk.red('✖') + '  Broker process exited unexpectedly. Check .hive/broker.log for details.')
     process.exit(1)

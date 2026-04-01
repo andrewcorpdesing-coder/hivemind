@@ -14,12 +14,9 @@ function findPromptsDir(): string {
   const devDir = resolve(__dirname, '../../../broker/dist/prompts')
   if (existsSync(devDir)) return devDir
 
-  // 2. Published package
-  try {
-    const req = createRequire(import.meta.url)
-    const brokerMain = req.resolve('@hivemind/broker')
-    return resolve(dirname(brokerMain), 'prompts')
-  } catch { /* not installed */ }
+  // 2. Bundled inside CLI package (npm install claudeswarm): cli/dist/broker/prompts
+  const bundledDir = resolve(__dirname, '../broker/prompts')
+  if (existsSync(bundledDir)) return bundledDir
 
   return devDir
 }
