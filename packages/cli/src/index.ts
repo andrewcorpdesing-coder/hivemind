@@ -14,7 +14,7 @@ import { runPlan, runApprove, runReject } from './commands/plan.js'
 const program = new Command()
 
 program
-  .name('claudeswarm')
+  .name('claudehive')
   .description('ClaudeSwarm — coordinador de agentes Claude Code')
   .version('0.1.0')
 
@@ -94,11 +94,11 @@ program
   .option('--yolo', 'Add --dangerously-skip-permissions to each claude command')
   .addHelpText('after', `
 Examples:
-  claudeswarm exec                                   # show all 7 roles
-  claudeswarm exec orchestrator coder-backend        # show only these roles
-  claudeswarm exec orchestrator:opus coder-backend:sonnet  # override model per role
-  claudeswarm exec --launch orchestrator coder-backend reviewer  # open terminals
-  claudeswarm exec --launch --yolo orchestrator coder-backend reviewer  # skip permission prompts`)
+  claudehive exec                                   # show all 7 roles
+  claudehive exec orchestrator coder-backend        # show only these roles
+  claudehive exec orchestrator:opus coder-backend:sonnet  # override model per role
+  claudehive exec --launch orchestrator coder-backend reviewer  # open terminals
+  claudehive exec --launch --yolo orchestrator coder-backend reviewer  # skip permission prompts`)
   .action(async (roles: string[], opts: { launch?: boolean; yolo?: boolean }) => {
     await runExec(roles, opts)
   })
@@ -111,10 +111,10 @@ program
   .option('--yolo', 'Add --dangerously-skip-permissions to each claude command')
   .addHelpText('after', `
 Examples:
-  claudeswarm run                                         # launch default 4 agents, no task
-  claudeswarm run "implementa autenticación JWT"           # queue task + launch agents
-  claudeswarm run --yolo "agrega endpoint DELETE /users"  # skip permission prompts
-  claudeswarm run --roles orchestrator coder-backend "implementa la API"`)
+  claudehive run                                         # launch default 4 agents, no task
+  claudehive run "implementa autenticación JWT"           # queue task + launch agents
+  claudehive run --yolo "agrega endpoint DELETE /users"  # skip permission prompts
+  claudehive run --roles orchestrator coder-backend "implementa la API"`)
   .action(async (task: string | undefined, opts: { roles?: string[]; yolo?: boolean }) => {
     await runRun(task, opts.roles ?? [], opts)
   })

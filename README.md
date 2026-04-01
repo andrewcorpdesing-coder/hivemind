@@ -1,8 +1,8 @@
-# ClaudeSwarm
+# ClaudeHive
 
 **Coordina múltiples instancias de Claude Code para que trabajen juntas en un mismo proyecto.**
 
-ClaudeSwarm es un broker MCP local que conecta varios agentes Claude Code entre sí. Cada agente tiene un rol (orquestador, coder, reviewer, etc.), comparte estado en una pizarra común, se coordina con tareas, bloqueos de archivos y mensajes directos — todo sin salir del terminal.
+ClaudeHive es un broker MCP local que conecta varios agentes Claude Code entre sí. Cada agente tiene un rol (orquestador, coder, reviewer, etc.), comparte estado en una pizarra común, se coordina con tareas, bloqueos de archivos y mensajes directos — todo sin salir del terminal.
 
 ```
 ┌─────────────────────────────────────────────────────────┐
@@ -28,7 +28,7 @@ ClaudeSwarm es un broker MCP local que conecta varios agentes Claude Code entre 
 
 ---
 
-## Por qué usar ClaudeSwarm
+## Por qué usar ClaudeHive
 
 ### Mejor calidad de código — el reviewer realmente funciona
 
@@ -67,17 +67,17 @@ Mientras coder-backend implementa la API, coder-frontend ya construye los compon
 ### Opción A — Desde el repositorio (desarrollo local)
 
 ```bash
-git clone https://github.com/andrewcorpdesing-coder/claudeswarm
-cd claudeswarm
+git clone https://github.com/andrewcorpdesing-coder/claudehive
+cd claudehive
 npm install
 npm run build
-npm run link:local      # registra 'claudeswarm' globalmente via npm link
+npm run link:local      # registra 'claudehive' globalmente via npm link
 ```
 
 ### Opción B — Desde npm
 
 ```bash
-npm install -g claudeswarm
+npm install -g claudehive
 ```
 
 ---
@@ -88,31 +88,31 @@ npm install -g claudeswarm
 
 ```bash
 cd mi-proyecto
-claudeswarm init
-claudeswarm run "implementa autenticación JWT"
+claudehive init
+claudehive run "implementa autenticación JWT"
 ```
 
-`claudeswarm run` arranca el broker, abre terminales para los agentes principales (orchestrator, coder-backend, coder-frontend, reviewer) y encola la tarea en un solo paso. Cada agente empieza solo al presionar Enter en su terminal.
+`claudehive run` arranca el broker, abre terminales para los agentes principales (orchestrator, coder-backend, coder-frontend, reviewer) y encola la tarea en un solo paso. Cada agente empieza solo al presionar Enter en su terminal.
 
 ### Forma manual — control total
 
 ```bash
 # 1. Inicializar en tu proyecto
 cd mi-proyecto
-claudeswarm init
+claudehive init
 
 # 2. Arrancar el broker en background
-claudeswarm start
+claudehive start
 
 # 3. Crear directorios de agentes con prompts, hooks MCP y ramas git
-claudeswarm scaffold
+claudehive scaffold
 
 # 4. Abrir terminales por rol
-claudeswarm exec --launch orchestrator coder-backend reviewer
+claudehive exec --launch orchestrator coder-backend reviewer
 
 # 5. El orquestador presentará un plan en su terminal.
 #    Cuando esté listo, apruébalo desde cualquier terminal:
-claudeswarm approve
+claudehive approve
 ```
 
 ---
@@ -144,9 +144,9 @@ crea tareas y notifica a los workers
 Puedes ver el plan en cualquier momento:
 
 ```bash
-claudeswarm plan            # muestra el plan actual (draft o aprobado)
-claudeswarm approve         # aprueba el plan — el orquestador empieza a crear tareas
-claudeswarm reject "texto"  # rechaza con feedback — el orquestador revisa y re-presenta
+claudehive plan            # muestra el plan actual (draft o aprobado)
+claudehive approve         # aprueba el plan — el orquestador empieza a crear tareas
+claudehive reject "texto"  # rechaza con feedback — el orquestador revisa y re-presenta
 ```
 
 ### 2. Ejecución y QA
@@ -169,22 +169,22 @@ Cuando todas las tareas están completadas, el broker emite automáticamente `sp
 
 | Comando | Descripción |
 |---------|-------------|
-| `claudeswarm init [nombre]` | Crea `.hive/` con config, `.mcp.json` en la raíz y modelos por defecto |
-| `claudeswarm start` | Arranca el broker como daemon (PID en `.hive/broker.pid`) |
-| `claudeswarm stop` | Para el broker |
-| `claudeswarm restart [--keep-blackboard]` | Para, limpia estado y arranca de nuevo |
-| `claudeswarm status` | Estado del broker, agentes online, sesiones activas |
-| `claudeswarm agents` | Lista agentes conectados con rol y estado |
-| `claudeswarm tasks [--status <estado>]` | Lista tareas (pending, in\_progress, completed…) |
-| `claudeswarm prompt <rol> [-i id] [-o path]` | Imprime o guarda el system prompt para un rol |
-| `claudeswarm scaffold [--force]` | Crea `agents/<rol>/` con CLAUDE.md, .mcp.json, hooks y ramas git. `--force` sobreescribe CLAUDE.md existentes |
-| `claudeswarm exec [roles…] [--launch] [--yolo]` | Imprime los comandos `claude` a ejecutar por rol (o abre terminales con `--launch`) |
-| `claudeswarm run [tarea] [--roles roles…] [--yolo]` | Arranca broker + agentes en un solo comando, opcionalmente encolando una tarea |
-| `claudeswarm task "descripción"` | Encola una tarea para el orquestador sin reiniciar agentes |
-| `claudeswarm plan` | Muestra el plan actual del orquestador (draft o aprobado) |
-| `claudeswarm approve` | Aprueba el plan — el orquestador empieza a crear tareas |
-| `claudeswarm reject "feedback"` | Rechaza el plan con feedback — el orquestador lo revisa |
-| `claudeswarm cleanup [--db] [--blackboard] [--branches] [--all]` | Resetea estado del broker |
+| `claudehive init [nombre]` | Crea `.hive/` con config, `.mcp.json` en la raíz y modelos por defecto |
+| `claudehive start` | Arranca el broker como daemon (PID en `.hive/broker.pid`) |
+| `claudehive stop` | Para el broker |
+| `claudehive restart [--keep-blackboard]` | Para, limpia estado y arranca de nuevo |
+| `claudehive status` | Estado del broker, agentes online, sesiones activas |
+| `claudehive agents` | Lista agentes conectados con rol y estado |
+| `claudehive tasks [--status <estado>]` | Lista tareas (pending, in\_progress, completed…) |
+| `claudehive prompt <rol> [-i id] [-o path]` | Imprime o guarda el system prompt para un rol |
+| `claudehive scaffold [--force]` | Crea `agents/<rol>/` con CLAUDE.md, .mcp.json, hooks y ramas git. `--force` sobreescribe CLAUDE.md existentes |
+| `claudehive exec [roles…] [--launch] [--yolo]` | Imprime los comandos `claude` a ejecutar por rol (o abre terminales con `--launch`) |
+| `claudehive run [tarea] [--roles roles…] [--yolo]` | Arranca broker + agentes en un solo comando, opcionalmente encolando una tarea |
+| `claudehive task "descripción"` | Encola una tarea para el orquestador sin reiniciar agentes |
+| `claudehive plan` | Muestra el plan actual del orquestador (draft o aprobado) |
+| `claudehive approve` | Aprueba el plan — el orquestador empieza a crear tareas |
+| `claudehive reject "feedback"` | Rechaza el plan con feedback — el orquestador lo revisa |
+| `claudehive cleanup [--db] [--blackboard] [--branches] [--all]` | Resetea estado del broker |
 
 ---
 
@@ -205,10 +205,10 @@ No necesitas usar todos los roles — arranca con `orchestrator` + 1-2 coders.
 ### Selección de modelo por rol
 
 ```bash
-claudeswarm exec                                                        # usa modelos del config
-claudeswarm exec orchestrator:opus coder-backend:sonnet reviewer:haiku  # override por rol
-claudeswarm exec --launch orchestrator coder-backend reviewer           # abre terminales
-claudeswarm exec --launch --yolo orchestrator coder-backend reviewer    # sin prompts de permisos
+claudehive exec                                                        # usa modelos del config
+claudehive exec orchestrator:opus coder-backend:sonnet reviewer:haiku  # override por rol
+claudehive exec --launch orchestrator coder-backend reviewer           # abre terminales
+claudehive exec --launch --yolo orchestrator coder-backend reviewer    # sin prompts de permisos
 ```
 
 | Rol | Modelo sugerido | Por qué |
@@ -281,7 +281,7 @@ Claude Code lo detecta automáticamente al abrir ese directorio.
 | `message_received` | Destinatario | Mensaje directo o broadcast |
 | `plan_approved` | Orchestrator | El usuario aprobó el plan vía `hive approve` |
 | `plan_rejected` | Orchestrator | El usuario rechazó el plan con feedback |
-| `new_input` | Orchestrator | Nueva tarea encolada vía `claudeswarm task` o `claudeswarm run` |
+| `new_input` | Orchestrator | Nueva tarea encolada vía `claudehive task` o `claudehive run` |
 
 ### Pizarra compartida (Blackboard)
 
@@ -388,7 +388,7 @@ POST /admin/tasks/:id/force-complete      — completar tarea sin QA
 GET  /admin/locks                         — bloqueos activos y en cola
 GET  /admin/blackboard                    — snapshot completo de la pizarra
 GET  /admin/audit[?agent_id=&action=&result=&since=&limit=]
-POST /admin/input                         — encolar tarea para el orquestador (usado por claudeswarm task / claudeswarm run)
+POST /admin/input                         — encolar tarea para el orquestador (usado por claudehive task / claudehive run)
 GET  /admin/plan                          — plan actual del orquestador
 POST /admin/plan/approve                  — aprobar plan (usado por hive approve)
 POST /admin/plan/reject                   — rechazar plan con feedback (usado por hive reject)
@@ -446,7 +446,7 @@ Por encima de 4-5 agentes simultáneos activos, el overhead de coordinación emp
 
 ```bash
 npm login                  # autenticarse con npmjs.org (una sola vez)
-npm run release            # build + publish claudeswarm
+npm run release            # build + publish claudehive
 ```
 
 ---
