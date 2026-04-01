@@ -1,8 +1,8 @@
 {
-  "name": "@hivemind/cli",
+  "name": "claudeswarm",
   "version": "0.1.0",
   "type": "module",
-  "bin": { "hive": "dist/index.js" },
+  "bin": { "claudeswarm": "dist/index.js" },
   "files": ["dist"],
   "scripts": {
     "build": "tsc",
