@@ -213,11 +213,13 @@ No necesitas usar todos los roles — arranca con `orchestrator` + 1-2 coders.
 ### Selección de modelo por rol
 
 ```bash
-hiveclaude exec                                                        # usa modelos del config
+hiveclaude exec                                                        # imprime comandos (no abre nada)
 hiveclaude exec orchestrator:opus coder-backend:sonnet reviewer:haiku  # override por rol
-hiveclaude exec --launch orchestrator coder-backend reviewer           # abre terminales
+hiveclaude exec --launch orchestrator coder-backend reviewer           # abre todos en una sola ventana (tabs)
 hiveclaude exec --launch --yolo orchestrator coder-backend reviewer    # sin prompts de permisos
 ```
+
+`--launch` abre **una sola ventana** de Windows Terminal con cada agente en su propio tab — no ventanas separadas. En macOS abre tabs en Terminal.app. En Linux abre una ventana por agente como fallback.
 
 | Rol | Modelo sugerido | Por qué |
 |-----|----------------|---------|

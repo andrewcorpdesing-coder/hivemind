@@ -33,8 +33,8 @@ export async function runExec(
   cwd: string = process.cwd(),
 ): Promise<void> {
   const config = loadConfig(cwd)
+  const autoStart = ' "."'  // always auto-start all agents
   const skipPerms = opts.yolo ? ' --dangerously-skip-permissions' : ''
-  const autoStart = opts.yolo ? ' "."' : ''
 
   // Build list of { role, model } to show
   let targets: Array<{ role: string; model: string }>
@@ -72,8 +72,8 @@ export async function runExec(
   console.log(chalk.bold('  Open each in a separate terminal:\n'))
   for (const { role, model } of targets) {
     const dir = `agents/${role}`
-    const start = role === 'orchestrator' ? '' : autoStart
-    console.log(`  ${chalk.cyan(role.padEnd(18))}  ${chalk.dim('$')} cd ${dir} && claude --model ${model}${skipPerms}${start}`)
+    const perms = opts.yolo && role !== 'orchestrator' && role !== 'reviewer' ? skipPerms : ''
+    console.log(`  ${chalk.cyan(role.padEnd(18))}  ${chalk.dim('$')} cd ${dir} && claude --model ${model}${perms} "."`)
   }
   console.log('')
 
@@ -91,45 +91,119 @@ async function launchAll(
   autoStart: string,
 ): Promise<void> {
   console.log(chalk.bold('  Launching terminals...\n'))
-  for (const { role, model } of targets) {
-    const agentDir = resolve(cwd, 'agents', role)
-    if (!existsSync(agentDir)) {
-      console.log(chalk.dim(`  skip  ${role} (directory not found)`))
-      continue
-    }
-    const start = role === 'orchestrator' ? '' : autoStart
-    const launched = tryLaunch(agentDir, model, skipPerms, start)
-    if (launched) {
-      console.log(chalk.green('  ✔') + `  ${role}`)
-    } else {
-      console.log(chalk.yellow('  ⚠') + `  ${role} — could not open terminal, run manually`)
-    }
+
+  // Filter to existing agent directories
+  const available = targets.filter(({ role }) => {
+    const exists = existsSync(resolve(cwd, 'agents', role))
+    if (!exists) console.log(chalk.dim(`  skip  ${role} (directory not found)`))
+    return exists
+  })
+
+  if (available.length === 0) return
+
+  const launched = tryLaunchAll(available, cwd, skipPerms, autoStart)
+  if (launched) {
+    for (const { role } of available) console.log(chalk.green('  ✔') + `  ${role}`)
+  } else {
+    console.log(chalk.yellow('  ⚠') + '  could not open terminal — run each command manually above')
   }
 }
 
-function tryLaunch(agentDir: string, model: string, skipPerms: string, autoStart: string): boolean {
-  const claudeCmd = `claude --model ${model}${skipPerms}${autoStart}`
+/**
+ * Opens all agents in a single terminal window (tabbed).
+ *
+ * Windows: one `wt` command with "; new-tab" separators — all agents share one
+ *   Windows Terminal window, each in its own tab.
+ * macOS: opens all in one Terminal.app window via AppleScript.
+ * Linux: falls back to one process per agent (no standard multi-tab protocol).
+ */
+function tryLaunchAll(
+  targets: Array<{ role: string; model: string }>,
+  cwd: string,
+  skipPerms: string,
+  autoStart: string,
+): boolean {
   try {
     if (process.platform === 'win32') {
-      // Try Windows Terminal first, fall back to cmd
-      try {
-        spawn('wt', ['new-tab', '--title', agentDir.split(/[\\/]/).pop() ?? 'agent',
-          '-d', agentDir, 'cmd', '/k', claudeCmd], { detached: true, stdio: 'ignore' }).unref()
-        return true
-      } catch { /* wt not available */ }
-      spawn('cmd', ['/c', 'start', 'cmd', '/k', `cd /d "${agentDir}" && ${claudeCmd}`], {
-        detached: true, stdio: 'ignore',
-      }).unref()
-      return true
+      return launchWindowsTerminal(targets, cwd, skipPerms, autoStart)
     }
 
     if (process.platform === 'darwin') {
-      const script = `tell application "Terminal" to do script "cd '${agentDir}' && ${claudeCmd}"`
-      spawn('osascript', ['-e', script], { detached: true, stdio: 'ignore' }).unref()
-      return true
+      return launchMacTerminal(targets, cwd, skipPerms, autoStart)
     }
 
-    // Linux — try common terminal emulators in order
+    return launchLinux(targets, cwd, skipPerms, autoStart)
+  } catch {
+    return false
+  }
+}
+
+/**
+ * Windows Terminal: builds a single `wt` compound command.
+ *   wt -d <dir1> --title <role1> cmd /k <cmd1> ; new-tab -d <dir2> --title <role2> cmd /k <cmd2> ...
+ * All agents open as tabs in one WT window.
+ */
+function launchWindowsTerminal(
+  targets: Array<{ role: string; model: string }>,
+  cwd: string,
+  skipPerms: string,
+  autoStart: string,
+): boolean {
+  const wtArgs: string[] = []
+  for (let i = 0; i < targets.length; i++) {
+    const { role, model } = targets[i]
+    const agentDir = resolve(cwd, 'agents', role)
+    const claudeCmd = `claude --model ${model}${skipPerms}${autoStart}`
+    if (i > 0) wtArgs.push(';', 'new-tab')
+    wtArgs.push('-d', agentDir, '--title', role, 'cmd', '/k', claudeCmd)
+  }
+  try {
+    spawn('wt', wtArgs, { detached: true, stdio: 'ignore' }).unref()
+    return true
+  } catch {
+    // wt not available — fall back to separate cmd windows
+    for (const { role, model } of targets) {
+      const agentDir = resolve(cwd, 'agents', role)
+      const claudeCmd = `claude --model ${model}${skipPerms}${autoStart}`
+      spawn('cmd', ['/c', 'start', 'cmd', '/k', `cd /d "${agentDir}" && ${claudeCmd}`], {
+        detached: true, stdio: 'ignore',
+      }).unref()
+    }
+    return true
+  }
+}
+
+/**
+ * macOS: opens each agent as a new tab in Terminal.app via AppleScript.
+ */
+function launchMacTerminal(
+  targets: Array<{ role: string; model: string }>,
+  cwd: string,
+  skipPerms: string,
+  autoStart: string,
+): boolean {
+  const scripts = targets.map(({ role, model }) => {
+    const agentDir = resolve(cwd, 'agents', role)
+    const claudeCmd = `claude --model ${model}${skipPerms}${autoStart}`
+    return `tell application "Terminal" to do script "cd '${agentDir}' && ${claudeCmd}"`
+  })
+  spawn('osascript', ['-e', scripts.join('\n')], { detached: true, stdio: 'ignore' }).unref()
+  return true
+}
+
+/**
+ * Linux: no standard multi-tab protocol — spawns one process per agent.
+ */
+function launchLinux(
+  targets: Array<{ role: string; model: string }>,
+  cwd: string,
+  skipPerms: string,
+  autoStart: string,
+): boolean {
+  let anyLaunched = false
+  for (const { role, model } of targets) {
+    const agentDir = resolve(cwd, 'agents', role)
+    const claudeCmd = `claude --model ${model}${skipPerms}${autoStart}`
     for (const [term, args] of [
       ['gnome-terminal', ['--', 'bash', '-c', `cd "${agentDir}" && ${claudeCmd}; exec bash`]],
       ['konsole',        ['-e', `bash -c 'cd "${agentDir}" && ${claudeCmd}'`]],
@@ -137,11 +211,10 @@ function tryLaunch(agentDir: string, model: string, skipPerms: string, autoStart
     ] as Array<[string, string[]]>) {
       try {
         spawn(term, args, { detached: true, stdio: 'ignore' }).unref()
-        return true
+        anyLaunched = true
+        break
       } catch { continue }
     }
-    return false
-  } catch {
-    return false
   }
+  return anyLaunched
 }
